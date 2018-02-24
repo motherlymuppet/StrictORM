@@ -25,11 +25,11 @@ class CreateTableController {
             sqlBuilder.append("(")
 
             fields.forEach { field ->
-                sqlBuilder.append(field.name)
+                sqlBuilder.append(field.name.toLowerCase())
                 sqlBuilder.append(" ")
 
                 val type = when (field.returnType) {
-                    String::class.starProjectedType -> "BLOB"
+                    String::class.starProjectedType -> "LONGVARCHAR"
                     Long::class.starProjectedType -> "BIGINT"
                     Int::class.starProjectedType -> "INTEGER"
                     Boolean::class.starProjectedType -> "BOOLEAN"
@@ -46,11 +46,17 @@ class CreateTableController {
                 sqlBuilder.append(type)
 
                 if(field.returnType.isMarkedNullable){
-                    sqlBuilder.append(" NULL,")
+                    sqlBuilder.append(" NULL ")
                 }
                 else{
-                    sqlBuilder.append(" NOT NULL,")
+                    sqlBuilder.append(" NOT NULL ")
                 }
+
+                if(field.name == "id"){
+                    sqlBuilder.append(" AUTO_INCREMENT")
+                }
+
+                sqlBuilder.append(",")
             }
 
             sqlBuilder.append("PRIMARY KEY (id));")

@@ -1,9 +1,8 @@
 package org.stevenlowes.tools.strictorm.dao
 
+import org.h2.command.dml.Delete
 import org.stevenlowes.tools.strictorm.Consultant
-import org.stevenlowes.tools.strictorm.dao.controllers.CreateObjectController
-import org.stevenlowes.tools.strictorm.dao.controllers.CreateTableController
-import org.stevenlowes.tools.strictorm.dao.controllers.LoadByIdController
+import org.stevenlowes.tools.strictorm.dao.controllers.*
 import org.stevenlowes.tools.strictorm.database.Tx
 import kotlin.reflect.KClass
 import kotlin.reflect.KVisibility
@@ -14,6 +13,10 @@ class DaoController {
     companion object {
         fun validateDao(clazz: KClass<*>){
             val className = clazz.simpleName;
+
+            if(clazz.annotations.map { it.annotationClass }.none { it == Dao::class }){
+                throw DaoException("$className is not annotated DAO")
+            }
 
             if(!clazz.isData){
                 throw DaoException("DAO is not final - $className")
@@ -56,12 +59,32 @@ class DaoController {
             validateDao(obj::class)
             return CreateObjectController.create(obj)
         }
+
+        fun <T: Any> updateObject(obj: T) {
+            validateDao(obj::class)
+            return UpdateObjectController.update(obj)
+        }
+
+        fun <T: Any> deleteObject(obj: T) {
+            validateDao(obj::class)
+            return DeleteObjectController.delete(obj)
+        }
     }
 }
 
 fun main(args: Array<String>){
     DaoController.dropAll()
     DaoController.createTable(Consultant::class)
-    val createObject = DaoController.createObject(Consultant(-1, "Name"))
-    DaoController.loadById(createObject.id, Consultant::class)
+    val createObject = DaoController.createObject(Consultant(-1, "Mr. name"))
+    println(createObject)
+
+    val updateObject = Consultant(createObject.id, "Mrs. Name (2)")
+
+    val selectObjectOne = DaoController.loadById(createObject.id, Consultant::class)
+    DaoController.updateObject(updateObject)
+
+    val selectObjectTwo = DaoController.loadById(createObject.id, Consultant::class)
+
+    println(selectObjectOne)
+    println(selectObjectTwo)
 }

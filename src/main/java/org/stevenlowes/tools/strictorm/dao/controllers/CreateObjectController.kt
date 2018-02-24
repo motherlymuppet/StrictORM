@@ -6,13 +6,13 @@ import java.util.*
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
 
-class CreateObjectController{
+class CreateObjectController {
     companion object {
-        fun <T: Any> create(obj: T): T{
+        fun <T : Any> create(obj: T): T {
             val sqlBuilder = StringBuilder()
 
             val clazz = obj::class
-            val props = clazz.memberProperties
+            val props = clazz.memberProperties.filter { it.name != "id" }
             val tableName = clazz.simpleName!!.toLowerCase()
 
             sqlBuilder.append("INSERT INTO $tableName (")
@@ -20,7 +20,7 @@ class CreateObjectController{
             val columnNameJoiner = StringJoiner(",")
             val paramsJoiner = StringJoiner(",")
             props.forEach { property ->
-                columnNameJoiner.add(property.name)
+                columnNameJoiner.add(property.name.toLowerCase())
                 paramsJoiner.add("?")
             }
 
@@ -31,9 +31,9 @@ class CreateObjectController{
 
             val values = props.map { property ->
                 (property as KProperty1<T, Any?>).get(obj)
-            }
+            }.toTypedArray()
 
-            val id = Tx.Companion.executeInsert(sqlBuilder.toString(), values)
+            val id = Tx.Companion.executeInsert(sqlBuilder.toString(), *values)
 
             return DaoController.loadById(id, clazz)
         }

@@ -78,7 +78,7 @@ private constructor(private val transaction: (Connection) -> T) {
             return Tx(transaction).fire()
         }
 
-        fun execute(sql: String, vararg params: Any){
+        fun execute(sql: String, vararg params: Any?){
             execute { conn ->
                 val stmt = conn.prepareStatement(sql)
                 fillParams(stmt, *params)
@@ -86,7 +86,7 @@ private constructor(private val transaction: (Connection) -> T) {
             }
         }
 
-        fun executeInsert(sql: String, vararg params: Any): Long {
+        fun executeInsert(sql: String, vararg params: Any?): Long {
             var id: Long = -1
 
             execute { conn ->
@@ -110,22 +110,23 @@ private constructor(private val transaction: (Connection) -> T) {
         fun <T> executeQuery(sql: String, parser: (ResultSet) -> T, vararg params: Any): T{
             return execute { conn ->
                 val stmt = conn.prepareStatement(sql)
-                fillParams(stmt, params)
+                fillParams(stmt, *params)
                 val rs = stmt.executeQuery()
                 return@execute parser(rs)
             }
         }
 
-        fun fillParams(stmt: PreparedStatement, vararg params: Any){
+        fun fillParams(stmt: PreparedStatement, vararg params: Any?){
             params.withIndex().forEach {(index, value) ->
-                fillParam(stmt, index, value)
+                //Remember that SQL is 1-indexed
+                fillParam(stmt, index + 1, value)
             }
         }
 
         private fun fillParam(stmt: PreparedStatement, index: Int, value: Any?) {
             if(value == null){
                 val type = when (value) {
-                    is String -> Types.BLOB
+                    is String -> Types.LONGVARCHAR
                     is Long -> Types.BIGINT
                     is Int -> Types.INTEGER
                     is Boolean -> Types.BOOLEAN

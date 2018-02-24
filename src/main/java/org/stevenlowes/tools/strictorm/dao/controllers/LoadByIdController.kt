@@ -13,11 +13,6 @@ import kotlin.reflect.full.primaryConstructor
 class LoadByIdController {
     companion object {
         fun <T : Any> load(id: Long, clazz: KClass<T>): T{
-            if (clazz.annotations.none { it.javaClass == Dao::javaClass }) {
-                //Is not annotated as a dao
-                throw DaoException("${clazz.simpleName} is not annoted Dao");
-            }
-
             val sql = "SELECT * FROM ${clazz.simpleName} WHERE id = ?"
 
             return Tx.executeQuery(sql, { readObject(it, clazz) }, id)
@@ -25,11 +20,12 @@ class LoadByIdController {
 
         private fun <T : Any> readObject(rs: ResultSet, clazz: KClass<T>): T {
             val constructor = clazz.primaryConstructor!!
+            rs.next()
             val params = readParams(rs, clazz)
-            return constructor.call(params)
+            return constructor.call(*params)
         }
 
-        private fun <T : Any> readParams(rs: ResultSet, clazz: KClass<T>): List<Any> {
+        private fun <T : Any> readParams(rs: ResultSet, clazz: KClass<T>): Array<Any> {
             val tableName = clazz.simpleName
 
             val memberProperties = clazz.memberProperties
@@ -40,7 +36,7 @@ class LoadByIdController {
 
                     yield(rs.getObject(columnname))
                 }
-            }.toList()
+            }.toList().toTypedArray()
         }
     }
 }
