@@ -1,6 +1,7 @@
 package org.stevenlowes.tools.strictorm.dao.controllers
 
 import org.stevenlowes.tools.strictorm.dao.DaoException
+import org.stevenlowes.tools.strictorm.dao.utils.PropUtils
 import org.stevenlowes.tools.strictorm.database.Tx
 import java.math.BigDecimal
 import java.sql.Types
@@ -17,51 +18,13 @@ class CreateTableController {
         fun createTable(clazz: KClass<*>) {
             val tableName = clazz.simpleName!!.toLowerCase()
 
-            val fields = clazz.memberProperties
+            val properties = clazz.memberProperties
 
-            val sqlBuilder = StringBuilder()
-            sqlBuilder.append("CREATE TABLE ")
-            sqlBuilder.append(tableName)
-            sqlBuilder.append("(")
+            val columns = PropUtils.getCreateTableStrings(properties)
 
-            fields.forEach { field ->
-                sqlBuilder.append(field.name.toLowerCase())
-                sqlBuilder.append(" ")
+            val sql = "CREATE TABLE $tableName ($columns, PRIMARY KEY(id));"
 
-                val type = when (field.returnType) {
-                    String::class.starProjectedType -> "LONGVARCHAR"
-                    Long::class.starProjectedType -> "BIGINT"
-                    Int::class.starProjectedType -> "INTEGER"
-                    Boolean::class.starProjectedType -> "BOOLEAN"
-                    LocalDate::class.starProjectedType -> "DATE"
-                    Double::class.starProjectedType -> "DOUBLE"
-                    Float::class.starProjectedType -> "FLOAT"
-                    LocalTime::class.starProjectedType -> "TIME"
-                    LocalDateTime::class.starProjectedType -> "TIMESTAMP"
-                    else -> {
-                        throw DaoException("Unable to parse the type of $field")
-                    }
-                }
-
-                sqlBuilder.append(type)
-
-                if(field.returnType.isMarkedNullable){
-                    sqlBuilder.append(" NULL ")
-                }
-                else{
-                    sqlBuilder.append(" NOT NULL ")
-                }
-
-                if(field.name == "id"){
-                    sqlBuilder.append(" AUTO_INCREMENT")
-                }
-
-                sqlBuilder.append(",")
-            }
-
-            sqlBuilder.append("PRIMARY KEY (id));")
-
-            Tx.Companion.execute(sqlBuilder.toString())
+            Tx.Companion.execute(sql)
         }
     }
 }
