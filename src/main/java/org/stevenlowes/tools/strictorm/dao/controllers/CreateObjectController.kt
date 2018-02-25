@@ -1,5 +1,6 @@
 package org.stevenlowes.tools.strictorm.dao.controllers
 
+import org.stevenlowes.tools.strictorm.dao.Dao
 import org.stevenlowes.tools.strictorm.dao.DaoController
 import org.stevenlowes.tools.strictorm.dao.utils.PropUtils
 import org.stevenlowes.tools.strictorm.dao.utils.StatementUtils
@@ -10,7 +11,7 @@ import kotlin.reflect.full.memberProperties
 
 class CreateObjectController {
     companion object {
-        fun <T : Any> create(obj: T): T {
+        fun <T : Dao> create(obj: T): T {
             val clazz = obj::class
             val props: List<KProperty1<out T, Any?>> = clazz.memberProperties.filter { it.name != "id" }
 
