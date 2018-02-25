@@ -11,7 +11,7 @@ import kotlin.reflect.full.starProjectedType
 
 class DaoController {
     companion object {
-        fun validateDao(clazz: KClass<*>){
+        private fun <T: Dao> validateDao(clazz: KClass<T>){
             val className = clazz.simpleName;
 
             if(clazz.annotations.map { it.annotationClass }.none { it == Dao::class }){
@@ -41,7 +41,7 @@ class DaoController {
             }
         }
 
-        fun createTable(clazz: KClass<*>){
+        fun <T: Dao> createTable(clazz: KClass<T>){
             validateDao(clazz)
             CreateTableController.createTable(clazz)
         }
@@ -50,53 +50,29 @@ class DaoController {
             Tx.execute("DROP ALL OBJECTS")
         }
 
-        fun <T: Any> loadById(id: Long, clazz: KClass<T>): T{
+        fun <T: Dao> loadById(id: Long, clazz: KClass<T>): T{
             validateDao(clazz)
             return LoadByIdController.load(id, clazz)
         }
 
-        fun <T: Any> createObject(obj: T): T {
+        fun <T: Dao> createObject(obj: T): T {
             validateDao(obj::class)
             return CreateObjectController.create(obj)
         }
 
-        fun <T: Any> updateObject(obj: T) {
+        fun <T: Dao> updateObject(obj: T) {
             validateDao(obj::class)
             return UpdateObjectController.update(obj)
         }
 
-        fun <T: Any> deleteObject(obj: T) {
+        fun <T: Dao> deleteObject(obj: T) {
             validateDao(obj::class)
             return DeleteObjectController.delete(obj)
         }
 
-        fun <T: Any> list(clazz: KClass<T>, pagination: Pagination? = null, order: Order? = null): List<T>{
+        fun <T: Dao> list(clazz: KClass<T>, pagination: Pagination? = null, order: Order? = null): List<T>{
             validateDao(clazz)
             return ListController.list(clazz, pagination, order)
         }
     }
-}
-
-fun main(args: Array<String>){
-    DaoController.dropAll()
-    DaoController.createTable(Consultant::class)
-    val createObject = DaoController.createObject(Consultant(-1, "Mr. name"))
-    println(createObject)
-
-    val updateObject = Consultant(createObject.id, "Mrs. Name (2)")
-
-    val selectObjectOne = DaoController.loadById(createObject.id, Consultant::class)
-    DaoController.updateObject(updateObject)
-
-    val selectObjectTwo = DaoController.loadById(createObject.id, Consultant::class)
-
-    println(selectObjectOne)
-    println(selectObjectTwo)
-
-    val list = DaoController.list(Consultant::class)
-    println(list)
-
-    DaoController.deleteObject(selectObjectTwo)
-    val list2 = DaoController.list(Consultant::class)
-    println(list2)
 }
