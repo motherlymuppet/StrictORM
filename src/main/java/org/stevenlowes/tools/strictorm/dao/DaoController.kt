@@ -69,6 +69,11 @@ class DaoController {
             validateDao(obj::class)
             return DeleteObjectController.delete(obj)
         }
+
+        fun <T: Any> list(clazz: KClass<T>, pagination: Pagination? = null, order: Order? = null): List<T>{
+            validateDao(clazz)
+            return ListController.list(clazz, pagination, order)
+        }
     }
 }
 
@@ -87,4 +92,11 @@ fun main(args: Array<String>){
 
     println(selectObjectOne)
     println(selectObjectTwo)
+
+    val list = DaoController.list(Consultant::class)
+    println(list)
+
+    DaoController.deleteObject(selectObjectTwo)
+    val list2 = DaoController.list(Consultant::class)
+    println(list2)
 }

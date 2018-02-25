@@ -1,9 +1,7 @@
 package org.stevenlowes.tools.strictorm.dao.controllers
 
-import org.stevenlowes.tools.strictorm.dao.DaoController
+import org.stevenlowes.tools.strictorm.dao.utils.PropUtils
 import org.stevenlowes.tools.strictorm.database.Tx
-import java.util.*
-import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
 
 class DeleteObjectController {
@@ -18,9 +16,9 @@ class DeleteObjectController {
 
             sqlBuilder.append("DELETE FROM $tableName WHERE id = ?;")
 
-            val id = (idProp as KProperty1<T, Any?>).get(obj)
+            val id = PropUtils.getValue(obj, idProp)
 
-            Tx.Companion.execute(sqlBuilder.toString(), id)
+            Tx.Companion.execute(sqlBuilder.toString(), listOf(id))
         }
     }
 }

@@ -17,10 +17,9 @@ import java.util.*
 </T> */
 class Tx<T> @Throws(SQLException::class)
 private constructor(private val transaction: (Connection) -> T) {
-    private val connection: Connection
+    private val connection: Connection = DriverManager.getConnection("jdbc:h2:~/test")
 
     init {
-        connection = DriverManager.getConnection("jdbc:h2:~/test")
         connection.autoCommit = false
     }
 
@@ -78,20 +77,20 @@ private constructor(private val transaction: (Connection) -> T) {
             return Tx(transaction).fire()
         }
 
-        fun execute(sql: String, vararg params: Any?){
+        fun execute(sql: String, params: List<Any?> = emptyList()){
             execute { conn ->
                 val stmt = conn.prepareStatement(sql)
-                fillParams(stmt, *params)
+                fillParams(stmt, params)
                 stmt.execute()
             }
         }
 
-        fun executeInsert(sql: String, vararg params: Any?): Long {
+        fun executeInsert(sql: String, params: List<Any?> = emptyList()): Long {
             var id: Long = -1
 
             execute { conn ->
                 val stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)
-                fillParams(stmt, *params)
+                fillParams(stmt, params)
                 stmt.execute()
                 val keys = stmt.generatedKeys
                 keys.next()
@@ -107,16 +106,16 @@ private constructor(private val transaction: (Connection) -> T) {
 
         }
 
-        fun <T> executeQuery(sql: String, parser: (ResultSet) -> T, vararg params: Any): T{
+        fun <T> executeQuery(sql: String, parser: (ResultSet) -> T, params: List<Any?> = emptyList()): T{
             return execute { conn ->
                 val stmt = conn.prepareStatement(sql)
-                fillParams(stmt, *params)
+                fillParams(stmt, params)
                 val rs = stmt.executeQuery()
                 return@execute parser(rs)
             }
         }
 
-        fun fillParams(stmt: PreparedStatement, vararg params: Any?){
+        fun fillParams(stmt: PreparedStatement, params: List<Any?> = emptyList()){
             params.withIndex().forEach {(index, value) ->
                 //Remember that SQL is 1-indexed
                 fillParam(stmt, index + 1, value)
