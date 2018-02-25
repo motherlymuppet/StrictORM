@@ -12,11 +12,7 @@ import kotlin.reflect.full.starProjectedType
 class DaoController {
     companion object {
         private fun <T: Dao> validateDao(clazz: KClass<T>){
-            val className = clazz.simpleName;
-
-            if(clazz.annotations.map { it.annotationClass }.none { it == Dao::class }){
-                throw DaoException("$className is not annotated DAO")
-            }
+            val className = clazz.simpleName
 
             if(!clazz.isData){
                 throw DaoException("DAO is not final - $className")
