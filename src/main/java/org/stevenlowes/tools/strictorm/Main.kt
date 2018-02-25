@@ -1,10 +1,13 @@
 package org.stevenlowes.tools.strictorm
 
 import org.stevenlowes.tools.strictorm.dao.DaoController
+import org.stevenlowes.tools.strictorm.dao.initialisation.DaoInitialiser
 
 fun main(args: Array<String>){
     DaoController.dropAll()
-    DaoController.createTable(Consultant::class)
+
+    DaoInitialiser.initialise(listOf(Consultant::class))
+
     val createObject = DaoController.createObject(Consultant(-1, "Mr. name"))
     println(createObject)
 

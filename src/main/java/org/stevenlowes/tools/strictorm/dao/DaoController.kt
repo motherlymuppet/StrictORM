@@ -1,8 +1,7 @@
 package org.stevenlowes.tools.strictorm.dao
 
-import org.h2.command.dml.Delete
-import org.stevenlowes.tools.strictorm.Consultant
 import org.stevenlowes.tools.strictorm.dao.controllers.*
+import org.stevenlowes.tools.strictorm.dao.initialisation.DaoInitialiser
 import org.stevenlowes.tools.strictorm.database.Tx
 import kotlin.reflect.KClass
 import kotlin.reflect.KVisibility
@@ -20,6 +19,10 @@ class DaoController {
 
             if(clazz.isOpen){
                 throw DaoException("DAO is open - $className")
+            }
+
+            if(!DaoInitialiser.isInitialised(clazz)){
+                throw DaoException("DAO was not passed to initialised - $className")
             }
 
             val visibility = clazz.visibility
