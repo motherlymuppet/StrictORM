@@ -1,11 +1,8 @@
 package org.stevenlowes.tools.strictorm.database
 
+import com.healthmarketscience.sqlbuilder.*
 import org.stevenlowes.tools.strictorm.dao.DaoException
-import java.math.BigDecimal
 import java.sql.*
-import java.sql.Date
-import java.time.*
-import java.util.*
 
 /**
  * A class for simplifying running queries on a database.
@@ -77,20 +74,20 @@ private constructor(private val transaction: (Connection) -> T) {
             return Tx(transaction).fire()
         }
 
-        fun execute(sql: String, params: List<Any?> = emptyList()){
+        fun execute(sql: String, preparer: QueryPreparer?){
             execute { conn ->
                 val stmt = conn.prepareStatement(sql)
-                fillParams(stmt, params)
+                preparer?.setStaticValues(stmt)
                 stmt.execute()
             }
         }
 
-        fun executeInsert(sql: String, params: List<Any?> = emptyList()): Long {
+        fun executeInsert(sql: String, preparer: QueryPreparer?): Long {
             var id: Long = -1
 
             execute { conn ->
                 val stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)
-                fillParams(stmt, params)
+                preparer?.setStaticValues(stmt)
                 stmt.execute()
                 val keys = stmt.generatedKeys
                 keys.next()
@@ -106,80 +103,29 @@ private constructor(private val transaction: (Connection) -> T) {
 
         }
 
-        fun <T> executeQuery(sql: String, parser: (ResultSet) -> T, params: List<Any?> = emptyList()): T{
+        fun <T> executeQuery(sql: String, preparer: QueryPreparer?, parser: (ResultSet) -> T, params: List<Any?> = emptyList()): T{
             return execute { conn ->
                 val stmt = conn.prepareStatement(sql)
-                fillParams(stmt, params)
+                preparer?.setStaticValues(stmt)
                 val rs = stmt.executeQuery()
                 return@execute parser(rs)
             }
         }
-
-        fun fillParams(stmt: PreparedStatement, params: List<Any?> = emptyList()){
-            params.withIndex().forEach {(index, value) ->
-                //Remember that SQL is 1-indexed
-                fillParam(stmt, index + 1, value)
-            }
-        }
-
-        private fun fillParam(stmt: PreparedStatement, index: Int, value: Any?) {
-            if(value == null){
-                val type = when (value) {
-                    is String -> Types.LONGVARCHAR
-                    is Long -> Types.BIGINT
-                    is Int -> Types.INTEGER
-                    is Boolean -> Types.BOOLEAN
-                    is LocalDate -> Types.DATE
-                    is Double -> Types.DOUBLE
-                    is Float -> Types.FLOAT
-                    is LocalTime -> Types.TIME
-                    is LocalDateTime -> Types.TIMESTAMP
-                    else -> {
-                        throw DaoException("Unable to parse the type of $value")
-                    }
-                }
-                stmt.setNull(index, type)
-            }
-            else{
-                when(value){
-                    is String -> stmt.setString(index, value)
-                    is Long -> stmt.setLong(index, value)
-                    is Int -> stmt.setInt(index, value)
-                    is Boolean -> stmt.setBoolean(index, value)
-                    is LocalDate -> stmt.setDate(index, Date.valueOf(value))
-                    is Double -> stmt.setDouble(index, value)
-                    is Float -> stmt.setFloat(index, value)
-                    is LocalTime -> stmt.setTime(index, Time(value.hour, value.minute, value.second))
-                    is LocalDateTime -> stmt.setTimestamp(index, Timestamp(value.year, value.monthValue, value.dayOfMonth, value.hour, value.minute, value.second, value.nano))
-                    else -> {
-                        throw DaoException("Unable to parse the type of $value")
-                    }
-                }
-            }
-        }
-
-        /**
-         * Parse all rows from result set and combine into a list.
-         *
-         * @param rs        The resultSet to parse.
-         * @param rowParser A transaction which parses one row of the resultSet and returns the object represented in that row. Null values are filtered from the list. This transaction should not call
-         * rs.next().
-         * @param <T>       The type of object represented in each row of the RS.
-         *
-         * @return The list of all objects represented by the RS.
-         *
-         * @throws SQLException Something went wrong with your row parser code when retrieving values from the RS.
-        </T> */
-        @Throws(SQLException::class)
-        fun <T> parseRS(rs: ResultSet, rowParser: RowParser<T>): List<T> {
-            val list = ArrayList<T>()
-            while (rs.next()) {
-                val elem = rowParser[rs]
-                if (elem != null) {
-                    list.add(elem)
-                }
-            }
-            return list
-        }
     }
+}
+
+fun DeleteQuery.execute(preparer: QueryPreparer?){
+    Tx.execute(validate().toString(), preparer)
+}
+
+fun <T> SelectQuery.execute(preparer: QueryPreparer?, parser: (ResultSet) -> T): T{
+    return Tx.executeQuery(validate().toString(), preparer, parser)
+}
+
+fun InsertQuery.execute(preparer: QueryPreparer?): Long{
+    return Tx.executeInsert(validate().toString(), preparer)
+}
+
+fun UpdateQuery.execute(preparer: QueryPreparer?){
+    Tx.execute(validate().toString(), preparer)
 }
