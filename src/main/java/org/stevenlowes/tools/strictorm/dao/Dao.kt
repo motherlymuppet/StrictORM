@@ -1,44 +1,30 @@
 package org.stevenlowes.tools.strictorm.dao
 
-import com.healthmarketscience.sqlbuilder.BinaryCondition
-import com.healthmarketscience.sqlbuilder.QueryPreparer
-import com.healthmarketscience.sqlbuilder.SelectQuery
 import com.healthmarketscience.sqlbuilder.dbspec.Column
-import com.healthmarketscience.sqlbuilder.dbspec.Table
-import org.stevenlowes.tools.strictorm.dao.initialisation.DaoInitialiser
-import org.stevenlowes.tools.strictorm.dao.utils.LazyWithReceiver
-import org.stevenlowes.tools.strictorm.dao.utils.ResultSetUtils
-import org.stevenlowes.tools.strictorm.database.execute
-import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 
 interface Dao{
     val id: Long
+    val dbTable get() = this::class.dbTable
+    val dbIdColumn get() = this::class.dbIdColumn
 }
 
-val <T: Dao> KClass<T>.dbTable: Table
-        by LazyWithReceiver<KClass<T>, Table>
-        { DaoInitialiser.getTable(this) }
-
-val <T: Dao> KClass<T>.dbColumns: List<Pair<Column, KProperty1<T, *>>>
-        by LazyWithReceiver<KClass<T>, List<Pair<Column, KProperty1<T, *>>>> { DaoInitialiser.getColumns(this) }
-
-val <T: Dao> KClass<T>.dbIdColumn: Column
-        by LazyWithReceiver<KClass<T>, Column>
-        { DaoInitialiser.getIdColumn(this) }
-
-fun <T: Dao> KClass<T>.read(id: Long): T{
-    val preparer = QueryPreparer()
-    val columns = dbColumns.map { it.first } + listOf(dbIdColumn)
-
-    val query = SelectQuery()
-    query.addColumns(*columns.toTypedArray())
-    query.addFromTable(dbTable)
-    query.addCondition(BinaryCondition(BinaryCondition.Op.EQUAL_TO, dbIdColumn, preparer.addStaticPlaceHolder(id)))
-    return query.execute(preparer, {ResultSetUtils.readObject(it, this, columns)})
-}
-
-val <T: Dao> T.dbTable get() = this::class.dbTable
+// This is not inside the interface so we can cast to T
 @Suppress("UNCHECKED_CAST")
 val <T: Dao> T.dbColumns: List<Pair<Column, KProperty1<T, *>>> get() = this::class.dbColumns as List<Pair<Column, KProperty1<T, *>>>
-val <T: Dao> T.dbIdColumn get() = this::class.dbIdColumn
+
+
+//TODO STEP 1 - Allow for DAO as field
+//TODO STEP 1a - Validation should check that fields are valid types
+//TODO STEP 1b - This includes that they should be registered DAOs
+//TODO STEP 1c - SELECT should do an inner join
+//TODO STEP 1d - What do we do about foreign keys? What about on delete/update? Do we let the user decide? Hopefully not.
+//TODO step 1e - INSERT needs to recursively update children
+//TODO step 1f - How do we tell whether the children have been inserted already? Maybe everything should just use REPLACE instead of separate INSERT / UPDATE
+
+//TODO STEP 2 - Allow for multiple layers of nested DAO
+
+//TODO STEP 3 - Allow DAO A to have DAO B as parameter which has DAO A as parameter
+//TODO STEP 3a. Think this requires table aliases be used
+
+//TODO STEP 4 - MANY-TO-MANY
