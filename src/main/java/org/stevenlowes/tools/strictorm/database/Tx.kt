@@ -129,3 +129,7 @@ fun InsertQuery.execute(preparer: QueryPreparer?): Long{
 fun UpdateQuery.execute(preparer: QueryPreparer?){
     Tx.execute(validate().toString(), preparer)
 }
+
+fun CreateTableQuery.execute(){
+    Tx.execute(validate().toString(), null)
+}

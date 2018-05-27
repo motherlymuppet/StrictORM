@@ -26,3 +26,5 @@ private fun ResultSet.getParams(columns: List<Column>): Array<Any> {
         getObject(it.columnNameSQL)
     }.toTypedArray()
 }
+
+//TODO use QueryReader

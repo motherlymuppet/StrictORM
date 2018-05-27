@@ -1,11 +1,11 @@
 package org.stevenlowes.tools.strictorm
 
-import org.stevenlowes.tools.strictorm.dao.initialisation.DaoInitialiser
+import org.stevenlowes.tools.strictorm.dao.DaoInitialiser
 import org.stevenlowes.tools.strictorm.dao.operations.save
-import org.stevenlowes.tools.strictorm.dao.read
 
 fun main(args: Array<String>){
     DaoInitialiser.initialise(Consultant::class)
+    DaoInitialiser.createTables()
 
     val consultant = Consultant("Mr. name").save()
     println(consultant) //Create a consultant and save it

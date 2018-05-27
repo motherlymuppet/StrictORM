@@ -13,6 +13,15 @@ interface Dao{
 @Suppress("UNCHECKED_CAST")
 val <T: Dao> T.dbColumns: List<Pair<Column, KProperty1<T, *>>> get() = this::class.dbColumns as List<Pair<Column, KProperty1<T, *>>>
 
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.RUNTIME)
+@MustBeDocumented
+annotation class StringLength(val length: Int)
+
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.RUNTIME)
+@MustBeDocumented
+annotation class DecimalPrecision(val scale: Int, val precision: Int)
 
 //TODO STEP 1 - Allow for DAO as field
 //TODO STEP 1a - Validation should check that fields are valid types
