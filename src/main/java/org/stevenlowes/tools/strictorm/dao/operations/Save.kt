@@ -6,9 +6,10 @@ import com.healthmarketscience.sqlbuilder.QueryPreparer
 import com.healthmarketscience.sqlbuilder.UpdateQuery
 import org.stevenlowes.tools.strictorm.dao.*
 import org.stevenlowes.tools.strictorm.database.execute
+import kotlin.reflect.KProperty1
 
 fun <T : Dao> T.save(): T {
-    return if (id == null) {
+    return if (id == -1L) {
         insert(this)
     }
     else {

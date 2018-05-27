@@ -5,7 +5,6 @@ import com.healthmarketscience.sqlbuilder.dbspec.Table
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbSpec
 import org.stevenlowes.tools.strictorm.dao.Dao
 import org.stevenlowes.tools.strictorm.dao.DaoException
-import org.stevenlowes.tools.strictorm.database.Tx
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -18,75 +17,94 @@ import kotlin.reflect.full.starProjectedType
 class DaoInitialiser {
 
     companion object {
-        private val tables: Map<KClass<out Dao>, Table> = null
-        private val columns: Map<KClass<out Dao>, Map<Column, KProperty1<Dao, Any>>> = null
-        private val idColumns: Map<KClass<out Dao>, Column> = null
+        private val spec = DbSpec()
+        private val schema = spec.addDefaultSchema()
 
-        internal fun <T: Dao> getTable(clazz: KClass<T>): Table{
+        private val tables: MutableMap<KClass<out Dao>, Table> = mutableMapOf()
+        private val columns: MutableMap<KClass<out Dao>, List<Pair<Column, KProperty1<out Dao, *>>>> = mutableMapOf()
+        private val idColumns: MutableMap<KClass<out Dao>, Column> = mutableMapOf()
+
+        internal fun <T : Dao> getTable(clazz: KClass<T>): Table {
             return tables[clazz] ?: throw DaoException("Table not found for class ${clazz.simpleName}")
         }
 
-        internal fun <T: Dao> getColumns(clazz: KClass<T>): Map<Column, KProperty1<Dao, Any>>{
-            return columns[clazz] ?: throw DaoException("Columns not found for class ${clazz.simpleName}")
+        internal fun <T : Dao> getColumns(clazz: KClass<T>): List<Pair<Column, KProperty1<T, *>>> {
+            val columns = columns[clazz] ?: throw DaoException("Columns not found for class ${clazz.simpleName}")
+            @Suppress("UNCHECKED_CAST")
+            return columns as List<Pair<Column, KProperty1<T, *>>>
         }
 
-        internal fun <T: Dao> getIdColumn(clazz: KClass<T>): Column{
+        internal fun <T : Dao> getIdColumn(clazz: KClass<T>): Column {
             return idColumns[clazz] ?: throw DaoException("ID Column not found for class ${clazz.simpleName}")
         }
 
-        fun initialise(daos: Iterable<KClass<out Dao>>) {
-            val spec = DbSpec()
-            val schema = spec.addDefaultSchema()
+        fun initialise(daos: List<KClass<out Dao>>){
+            daos.forEach {
+                initialise(it)
+            }
+        }
 
-            daos.forEach { dao ->
-                val tableName = dao.simpleName!!.toLowerCase()
-                val table = schema.addTable(tableName)
+        fun <T : Dao> initialise(dao: KClass<T>) {
+            val tableName = dao.simpleName!!.toLowerCase()
+            val table = schema.addTable(tableName)
 
-                dao.memberProperties.forEach { property ->
-                    val sj = StringJoiner(" ")
+            var idColumn: Column? = null
+            val columns: MutableList<Pair<Column, KProperty1<T, Any?>>> = mutableListOf()
 
-                    val type = property.returnType
+            dao.memberProperties.forEach { property ->
+                val name = property.name.toLowerCase()
 
-                    sj.add(
-                            when (type) {
-                                String::class.starProjectedType -> "LONGVARCHAR"
-                                Long::class.starProjectedType -> "BIGINT"
-                                Int::class.starProjectedType -> "INTEGER"
-                                Boolean::class.starProjectedType -> "BOOLEAN"
-                                LocalDate::class.starProjectedType -> "DATE"
-                                Double::class.starProjectedType -> "DOUBLE"
-                                Float::class.starProjectedType -> "FLOAT"
-                                LocalTime::class.starProjectedType -> "TIME"
-                                LocalDateTime::class.starProjectedType -> "TIMESTAMP"
-                                else -> {
-                                    throw DaoException("Unable to parse the type of $property")
-                                }
+                val sj = StringJoiner(" ")
+                val type = property.returnType
+
+                sj.add(
+                        when (type) {
+                            String::class.starProjectedType -> "LONGVARCHAR"
+                            Long::class.starProjectedType -> "BIGINT"
+                            Int::class.starProjectedType -> "INTEGER"
+                            Boolean::class.starProjectedType -> "BOOLEAN"
+                            LocalDate::class.starProjectedType -> "DATE"
+                            Double::class.starProjectedType -> "DOUBLE"
+                            Float::class.starProjectedType -> "FLOAT"
+                            LocalTime::class.starProjectedType -> "TIME"
+                            LocalDateTime::class.starProjectedType -> "TIMESTAMP"
+                            else -> {
+                                throw DaoException("Unable to parse the type of $property")
                             }
-                          )
+                        }
+                      )
 
-                    sj.add(
-                            when (type.isMarkedNullable) {
-                                true -> "NULL"
-                                false -> "NOT NULL"
-                            }
-                          )
+                sj.add(
+                        when (type.isMarkedNullable) {
+                            true -> "NULL"
+                            false -> "NOT NULL"
+                        }
+                      )
 
-                    val name = property.name.toLowerCase()
+                sj.add(
+                        if (name == "id") {
+                            "AUTO_INCREMENT"
+                        }
+                        else {
+                            ""
+                        }
+                      )
 
-                    sj.add(
-                            if (name == "id") {
-                                "AUTO_INCREMENT"
-                            }
-                            else {
-                                ""
-                            }
-                          )
+                val column = table.addColumn(name, sj.toString(), null)
 
-                    table.addColumn(name, name, null)
+                if (name == "id") {
+                    idColumn = column
+                }
+                else {
+                    columns.add(Pair(column, property))
                 }
             }
 
-            //TODO create schema in database
+            idColumn ?: throw DaoException("No ID Column found")
+
+            tables[dao] = table
+            this.columns[dao] = columns
+            idColumns[dao] = idColumn!!
         }
     }
 }

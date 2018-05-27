@@ -22,9 +22,9 @@ class ResultSetUtils{
                         columns.forEach { column ->
                             yield(rs.getObject(column.columnNameSQL))
                         }
-                    }
+                    }.toList().toTypedArray()
 
-                    yield(constructor.call(*params.toList().toTypedArray()))
+                    yield(constructor.call(*params))
                 }
             }.toList()
         }

@@ -13,16 +13,15 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 
 interface Dao{
-    val id: Long?
+    val id: Long
 }
 
 val <T: Dao> KClass<T>.dbTable: Table
         by LazyWithReceiver<KClass<T>, Table>
         { DaoInitialiser.getTable(this) }
 
-val <T: Dao> KClass<T>.dbColumns: Map<Column, KProperty1<Dao, Any>>
-        by LazyWithReceiver<KClass<T>, Map<Column, KProperty1<Dao, Any>>>
-        { DaoInitialiser.getColumns(this) }
+val <T: Dao> KClass<T>.dbColumns: List<Pair<Column, KProperty1<T, *>>>
+        by LazyWithReceiver<KClass<T>, List<Pair<Column, KProperty1<T, *>>>> { DaoInitialiser.getColumns(this) }
 
 val <T: Dao> KClass<T>.dbIdColumn: Column
         by LazyWithReceiver<KClass<T>, Column>
@@ -30,7 +29,7 @@ val <T: Dao> KClass<T>.dbIdColumn: Column
 
 fun <T: Dao> KClass<T>.read(id: Long): T{
     val preparer = QueryPreparer()
-    val columns = listOf(dbIdColumn) + dbColumns.keys
+    val columns = dbColumns.map { it.first } + listOf(dbIdColumn)
 
     val query = SelectQuery()
     query.addColumns(*columns.toTypedArray())
@@ -40,5 +39,6 @@ fun <T: Dao> KClass<T>.read(id: Long): T{
 }
 
 val <T: Dao> T.dbTable get() = this::class.dbTable
-val <T: Dao> T.dbColumns get() = this::class.dbColumns
+@Suppress("UNCHECKED_CAST")
+val <T: Dao> T.dbColumns: List<Pair<Column, KProperty1<T, *>>> get() = this::class.dbColumns as List<Pair<Column, KProperty1<T, *>>>
 val <T: Dao> T.dbIdColumn get() = this::class.dbIdColumn

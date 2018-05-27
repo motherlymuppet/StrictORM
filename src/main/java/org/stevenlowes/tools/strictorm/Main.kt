@@ -5,7 +5,7 @@ import org.stevenlowes.tools.strictorm.dao.operations.save
 import org.stevenlowes.tools.strictorm.dao.read
 
 fun main(args: Array<String>){
-    DaoInitialiser.initialise(listOf(Consultant::class))
+    DaoInitialiser.initialise(Consultant::class)
 
     val consultant = Consultant("Mr. name").save()
     println(consultant) //Create a consultant and save it
