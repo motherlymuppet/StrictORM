@@ -1,8 +1,14 @@
 package org.stevenlowes.tools.strictorm.database
 
 import com.healthmarketscience.sqlbuilder.*
+import com.healthmarketscience.sqlbuilder.dbspec.Column
+import org.stevenlowes.tools.strictorm.dao.Dao
 import org.stevenlowes.tools.strictorm.dao.DaoException
+import org.stevenlowes.tools.strictorm.dao.utils.readObject
 import java.sql.*
+import kotlin.coroutines.experimental.buildSequence
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
 
 /**
  * A class for simplifying running queries on a database.
@@ -118,8 +124,14 @@ fun DeleteQuery.execute(preparer: QueryPreparer?){
     Tx.execute(validate().toString(), preparer)
 }
 
-fun <T> SelectQuery.execute(preparer: QueryPreparer?, parser: (ResultSet) -> T): T{
-    return Tx.executeQuery(validate().toString(), preparer, parser)
+fun <T: Dao> SelectQuery.execute(preparer: QueryPreparer?, constructor: KFunction<T>, columns: List<QueryReader.Column>): List<T>{
+    return Tx.executeQuery(validate().toString(), preparer, {
+        return@executeQuery buildSequence {
+            while(it.next()){
+                yield(it.readObject(constructor, columns))
+            }
+        }.toList()
+    })
 }
 
 fun InsertQuery.execute(preparer: QueryPreparer?): Long{
