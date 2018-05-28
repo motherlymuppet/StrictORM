@@ -1,39 +1,75 @@
 package org.stevenlowes.tools.strictorm.dao
 
+import com.healthmarketscience.sqlbuilder.*
 import com.healthmarketscience.sqlbuilder.dbspec.Column
+import org.stevenlowes.tools.strictorm.database.execute
+import org.stevenlowes.tools.strictorm.database.executeInsert
 import kotlin.reflect.KProperty1
 
 interface Dao{
     val id: Long
     val dbTable get() = this::class.dbTable
     val dbIdColumn get() = this::class.dbIdColumn
+
+    fun delete() {
+        val preparer = QueryPreparer()
+        val query = DeleteQuery(dbTable).addCondition(
+                BinaryCondition(BinaryCondition.Op.EQUAL_TO,
+                                dbIdColumn,
+                                preparer.addStaticPlaceHolder(id)
+                               ))
+        query.execute(preparer)
+    }
 }
 
-// This is not inside the interface so we can cast to T
 @Suppress("UNCHECKED_CAST")
 val <T: Dao> T.dbColumns: List<Pair<Column, KProperty1<T, *>>> get() = this::class.dbColumns as List<Pair<Column, KProperty1<T, *>>>
 
-@Target(AnnotationTarget.PROPERTY)
-@Retention(AnnotationRetention.RUNTIME)
-@MustBeDocumented
-annotation class StringLength(val length: Int)
+fun <T: Dao> T.reload(): T{
+    val id = this.id
+    if(id == -1L){
+        throw DaoException("Cannot reload when never saved")
+    }
+    else{
+        return this::class.read(id)
+    }
+}
 
-@Target(AnnotationTarget.PROPERTY)
-@Retention(AnnotationRetention.RUNTIME)
-@MustBeDocumented
-annotation class DecimalPrecision(val scale: Int, val precision: Int)
+fun <T : Dao> T.save(): T {
+    return if (id == -1L) {
+        insert(this)
+    }
+    else {
+        update(this)
+    }
+}
 
-//TODO STEP 1 - Allow for DAO as field
-//TODO STEP 1a - Validation should check that fields are valid types
-//TODO STEP 1b - This includes that they should be registered DAOs
-//TODO STEP 1c - SELECT should do an inner join
-//TODO STEP 1d - What do we do about foreign keys? What about on delete/update? Do we let the user decide? Hopefully not.
-//TODO step 1e - INSERT needs to recursively update children
-//TODO step 1f - How do we tell whether the children have been inserted already? Maybe everything should just use REPLACE instead of separate INSERT / UPDATE
+private fun <T : Dao> insert(dao: T): T {
+    val preparer = QueryPreparer()
+    val query = InsertQuery(dao.dbTable)
+    dao.dbColumns.forEach { (column, prop) ->
+        val placeholder = preparer.addStaticPlaceHolder(prop.get(dao))
+        query.addColumn(column, placeholder)
+    }
 
-//TODO STEP 2 - Allow for multiple layers of nested DAO
+    val id = query.executeInsert(preparer)
+    return dao::class.read(id)
+}
 
-//TODO STEP 3 - Allow DAO A to have DAO B as parameter which has DAO A as parameter
-//TODO STEP 3a. Think this requires table aliases be used
+private fun <T : Dao> update(dao: T): T {
+    val preparer = QueryPreparer()
+    val query = UpdateQuery(dao.dbTable)
 
-//TODO STEP 4 - MANY-TO-MANY
+    dao.dbColumns.forEach { (column, prop) ->
+        query.addSetClause(column, preparer.addStaticPlaceHolder(prop.get(dao)))
+    }
+
+    query.addCondition(BinaryCondition(
+            BinaryCondition.Op.EQUAL_TO,
+            dao.dbIdColumn,
+            preparer.addStaticPlaceHolder(dao.id)
+                                      ))
+
+    query.execute(preparer)
+    return dao
+}

@@ -15,11 +15,9 @@ import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
-import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.starProjectedType
 
 class DaoInitialiser {
-
     companion object {
         private val spec = DbSpec()
         private val schema = spec.addDefaultSchema()

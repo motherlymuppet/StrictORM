@@ -6,12 +6,11 @@ import com.healthmarketscience.sqlbuilder.QueryReader
 import com.healthmarketscience.sqlbuilder.SelectQuery
 import com.healthmarketscience.sqlbuilder.dbspec.Column
 import com.healthmarketscience.sqlbuilder.dbspec.Table
-import org.stevenlowes.tools.strictorm.dao.utils.LazyWithReceiver
-import org.stevenlowes.tools.strictorm.dao.utils.readObject
-import org.stevenlowes.tools.strictorm.database.execute
+import org.stevenlowes.tools.strictorm.database.executeQuery
+import java.util.*
 import kotlin.reflect.KClass
+import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty1
-import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.primaryConstructor
 
 abstract class DaoCompanion<T : Dao>(private val clazz: KClass<T>) {
@@ -47,5 +46,17 @@ fun <T : Dao> KClass<T>.read(id: Long): T {
     query.addFromTable(dbTable)
     query.addCondition(BinaryCondition(BinaryCondition.Op.EQUAL_TO, dbIdColumn, preparer.addStaticPlaceHolder(id)))
 
-    return query.execute(preparer, primaryConstructor!!, readerColumns).first()
+    return query.executeQuery(preparer, primaryConstructor!!, readerColumns).first()
+}
+
+class LazyWithReceiver<in This, out Return>(private val initializer:This.()->Return)
+{
+    private val values = WeakHashMap<This,Return>()
+
+    @Suppress("UNCHECKED_CAST")
+    operator fun getValue(thisRef:Any,property: KProperty<*>):Return = synchronized(values)
+    {
+        thisRef as This
+        return values.getOrPut(thisRef) {thisRef.initializer()}
+    }
 }
