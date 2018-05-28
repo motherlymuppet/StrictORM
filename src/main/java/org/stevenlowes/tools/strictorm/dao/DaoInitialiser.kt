@@ -27,17 +27,17 @@ class DaoInitialiser {
         private val idColumns: MutableMap<KClass<out Dao>, Column> = mutableMapOf()
 
         internal fun <T : Dao> getTable(clazz: KClass<T>): Table {
-            return tables[clazz] ?: throw DaoException("Table not found for class ${clazz.simpleName}")
+            return tables[clazz] ?: throw DaoException("Table not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
         }
 
         internal fun <T : Dao> getColumns(clazz: KClass<T>): List<Pair<Column, KProperty1<T, *>>> {
-            val columns = columns[clazz] ?: throw DaoException("Columns not found for class ${clazz.simpleName}")
+            val columns = columns[clazz] ?: throw DaoException("Columns not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
             @Suppress("UNCHECKED_CAST")
             return columns as List<Pair<Column, KProperty1<T, *>>>
         }
 
         internal fun <T : Dao> getIdColumn(clazz: KClass<T>): Column {
-            return idColumns[clazz] ?: throw DaoException("ID Column not found for class ${clazz.simpleName}")
+            return idColumns[clazz] ?: throw DaoException("ID Column not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
         }
 
         fun createTables(){
@@ -57,6 +57,8 @@ class DaoInitialiser {
         }
 
         fun <T : Dao> initialise(dao: KClass<T>) {
+            DaoValidation.verify(dao)
+
             val tableName = dao.simpleName!!.toLowerCase()
             val table = schema.addTable(tableName)
 

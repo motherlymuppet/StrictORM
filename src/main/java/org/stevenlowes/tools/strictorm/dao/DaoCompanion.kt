@@ -11,7 +11,10 @@ import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty1
+import kotlin.reflect.KVisibility
+import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.full.starProjectedType
 
 abstract class DaoCompanion<T : Dao>(private val clazz: KClass<T>) {
     val table by lazy { clazz.dbTable }
@@ -49,14 +52,13 @@ fun <T : Dao> KClass<T>.read(id: Long): T {
     return query.executeQuery(preparer, primaryConstructor!!, readerColumns).first()
 }
 
-class LazyWithReceiver<in This, out Return>(private val initializer:This.()->Return)
-{
-    private val values = WeakHashMap<This,Return>()
+class LazyWithReceiver<in This, out Return>(private val initializer: This.() -> Return) {
+    private val values = WeakHashMap<This, Return>()
 
     @Suppress("UNCHECKED_CAST")
-    operator fun getValue(thisRef:Any,property: KProperty<*>):Return = synchronized(values)
+    operator fun getValue(thisRef: Any, property: KProperty<*>): Return = synchronized(values)
     {
         thisRef as This
-        return values.getOrPut(thisRef) {thisRef.initializer()}
+        return values.getOrPut(thisRef) { thisRef.initializer() }
     }
 }

@@ -28,6 +28,8 @@ fun main(args: Array<String>){
     println(consultant4) //Read from database. Should be same as consultant 2.
 }
 
+//TODO allow 1:1
+
 //TODO STEP 1 - Allow for DAO as field
 //TODO STEP 1a - Validation should check that fields are valid types
 //TODO STEP 1b - This includes that they should be registered DAOs
