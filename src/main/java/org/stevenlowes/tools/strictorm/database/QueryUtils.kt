@@ -8,7 +8,7 @@ import kotlin.reflect.KFunction
 
 fun <T : Dao> SelectQuery.executeQuery(preparer: QueryPreparer?,
                                                              constructor: KFunction<T>,
-                                                             columns: List<QueryReader.Column>): List<T> {
+                                                             columns: List<QueryReader.Column>): Sequence<T> {
     return Transaction.execute { conn ->
         val sql = validate().toString()
         val stmt = conn.prepareStatement(sql)

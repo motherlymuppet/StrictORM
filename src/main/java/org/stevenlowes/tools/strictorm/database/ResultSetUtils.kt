@@ -7,13 +7,13 @@ import java.sql.ResultSet
 import kotlin.coroutines.experimental.buildSequence
 import kotlin.reflect.KFunction
 
-fun <T: Dao> ResultSet.readList(constructor: KFunction<T>, columns: List<QueryReader.Column>): List<T> {
+fun <T: Dao> ResultSet.readList(constructor: KFunction<T>, columns: List<QueryReader.Column>): Sequence<T> {
     use {
         return buildSequence {
             while (next()) {
                 yield(constructor.call(*getParams(columns)))
             }
-        }.toList()
+        }
     }
 }
 
