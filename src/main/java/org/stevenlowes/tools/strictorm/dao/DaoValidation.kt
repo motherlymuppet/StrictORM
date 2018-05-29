@@ -74,6 +74,9 @@ class DaoValidation{
             if (property.visibility != KVisibility.PUBLIC)
                 throw DaoException("$name must be public in $daoName")
 
+            if (name.endsWith("_otm"))
+                throw DaoException("$name ends with \"_otm\", which is not allowed (in $daoName)")
+
             verifyPropertyType(property.returnType, name, daoName)
         }
 

@@ -107,7 +107,7 @@ class DaoInitialiser {
         }
 
         private fun <T: Dao> addOneToManyColumn(table: DbTable, property: KProperty1<T, *>): DbColumn{
-            val name = property.name.toLowerCase() + "_id"
+            val name = property.name.toLowerCase() + "_id_otm"
             val column = table.addColumn(name, "BIGINT", null)
 
             if(!property.returnType.isMarkedNullable){

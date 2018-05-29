@@ -48,7 +48,14 @@ private fun <T : Dao> insert(dao: T): T {
     val preparer = QueryPreparer()
     val query = InsertQuery(dao.dbTable)
     dao.dbColumns.forEach { (column, prop) ->
-        val placeholder = preparer.addStaticPlaceHolder(prop.get(dao))
+        val placeholder =
+        if(column.columnNameSQL.endsWith("_otm")){
+            val child = prop.get(dao) as Dao
+            preparer.addStaticPlaceHolder(child.id)
+        }
+        else{
+            preparer.addStaticPlaceHolder(prop.get(dao))
+        }
         query.addColumn(column, placeholder)
     }
 
