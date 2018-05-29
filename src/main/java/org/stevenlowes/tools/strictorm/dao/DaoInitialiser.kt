@@ -131,7 +131,7 @@ class DaoInitialiser {
                 column.notNull()
             }
 
-            val erasure = property.returnType.jvmErasure as KClass<out Dao>
+            val erasure = property.toDaoClass()
             val otherTable = erasure.dbTable
             val foreignKeyName = "foreign_key_${table.name}_${otherTable.tableNameSQL}_$name"
             val foreignKey = DbForeignKeyConstraint(column, foreignKeyName, otherTable, "id")

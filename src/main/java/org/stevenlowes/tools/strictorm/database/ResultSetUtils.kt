@@ -3,6 +3,7 @@ package org.stevenlowes.tools.strictorm.database
 import com.healthmarketscience.sqlbuilder.QueryReader
 import org.stevenlowes.tools.strictorm.dao.Dao
 import org.stevenlowes.tools.strictorm.dao.DaoException
+import org.stevenlowes.tools.strictorm.dao.toDaoClass
 import java.math.BigDecimal
 import java.sql.Date
 import java.sql.ResultSet
@@ -12,8 +13,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import kotlin.coroutines.experimental.buildSequence
+import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.starProjectedType
+import kotlin.reflect.jvm.jvmErasure
 
 fun <T : Dao> ResultSet.readList(constructor: KFunction<T>, columns: List<QueryReader.Column>): List<T> {
     use {

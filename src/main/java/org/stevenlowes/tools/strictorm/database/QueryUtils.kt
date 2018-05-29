@@ -11,6 +11,7 @@ fun <T : Dao> SelectQuery.executeQuery(preparer: QueryPreparer?,
                                                              columns: List<QueryReader.Column>): List<T> {
     return Transaction.execute { conn ->
         val sql = validate().toString()
+        println(sql)
         val stmt = conn.prepareStatement(sql)
         preparer?.setStaticValues(stmt)
         val rs = stmt.executeQuery()
