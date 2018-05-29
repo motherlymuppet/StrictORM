@@ -29,11 +29,8 @@ fun <T : Dao> KClass<T>.read(id: Long): T {
         }
     }.iterator()
 
-    //TODO fix this alias
     val table = RejoinTable(dbTable, aliasGenerator.next())
-
     val query = SelectQuery()
-
     val columns = recursiveConstructorColumns(query, aliasGenerator, table).map { reader.newColumn.setColumnObject(it) }
     query.addCustomColumns(*columns.toTypedArray())
 
@@ -57,7 +54,6 @@ private fun <T : Dao> KClass<T>.recursiveConstructorColumns(query: SelectQuery, 
             .map {
                 val daoClass = (it.type.toDaoClass())
                 val name = it.name + "_id_otm"
-                //TODO fix this alias
                 Triple(daoClass, RejoinTable(daoClass.dbTable, aliasGenerator.next()), name)
             }
 
