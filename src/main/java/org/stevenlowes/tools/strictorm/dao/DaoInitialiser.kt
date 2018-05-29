@@ -16,9 +16,13 @@ import java.time.LocalTime
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
+import kotlin.reflect.KType
 import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.jvm.jvmErasure
+
+//TODO how to map properties not appearing in the same order as constructor arguments
 
 class DaoInitialiser {
     companion object {
@@ -53,15 +57,32 @@ class DaoInitialiser {
             }
         }
 
-        fun initialise(daos: Iterable<KClass<out Dao>>) {
-            daos.forEach {
-                initialise(it)
-            }
+        fun initialise(vararg daos: KClass<out Dao>) {
+            initialise(daos.toList())
         }
 
-        fun initialise(vararg daos: KClass<out Dao>) {
-            daos.forEach {
-                initialise(it)
+        fun initialise(daos: Iterable<KClass<out Dao>>) {
+            val list = daos.toMutableList()
+            val created: MutableList<KType> = mutableListOf()
+
+            while(list.isNotEmpty()){
+                val toAdd = list.filter {
+                    it.declaredMemberProperties.all {
+                        val returnType = it.returnType
+                        ValidTypes.isDataType(returnType) || returnType in created
+                    }
+                }
+
+                if(toAdd.isEmpty()){
+                    throw DaoException("Cannot initialise DAOs due to dependency loop")
+                }
+
+                toAdd.forEach {
+                    initialise(it)
+                }
+
+                list.removeAll(toAdd)
+                created.addAll(toAdd.map { it.starProjectedType })
             }
         }
 
@@ -70,6 +91,15 @@ class DaoInitialiser {
 
             val tableName = dao.simpleName!!.toLowerCase()
             val table = schema.addTable(tableName)
+
+            //TESTING
+            val params = dao.primaryConstructor!!.parameters
+            params.map { it.name }
+
+            val props = dao.declaredMemberProperties
+            props.map { it.name }
+
+            //END TEST
 
             val columns = dao.declaredMemberProperties
                     .filter { it.name != "id" }
@@ -85,20 +115,7 @@ class DaoInitialiser {
         }
 
         private fun <T: Dao> addColumn(table: DbTable, property: KProperty1<T, *>): DbColumn{
-            val options = listOf(
-                    String::class.starProjectedType,
-                    BigDecimal::class.starProjectedType,
-                    Long::class.starProjectedType,
-                    Int::class.starProjectedType,
-                    Boolean::class.starProjectedType,
-                    LocalDate::class.starProjectedType,
-                    Double::class.starProjectedType,
-                    Float::class.starProjectedType,
-                    LocalTime::class.starProjectedType,
-                    LocalDateTime::class.starProjectedType
-                                )
-
-            return if(property.returnType in options){
+            return if(ValidTypes.isDataType(property.returnType)){
                 addDataColumn(table, property)
             }
             else{
@@ -117,7 +134,8 @@ class DaoInitialiser {
             val erasure = property.returnType.jvmErasure as KClass<out Dao>
             val otherTable = erasure.dbTable
             val foreignKeyName = "foreign_key_${table.name}_${otherTable.tableNameSQL}_$name"
-            column.addConstraint(DbForeignKeyConstraint(column, foreignKeyName, otherTable, "id"))
+            val foreignKey = DbForeignKeyConstraint(column, foreignKeyName, otherTable, "id")
+            column.addConstraint(foreignKey)
 
             return column
         }

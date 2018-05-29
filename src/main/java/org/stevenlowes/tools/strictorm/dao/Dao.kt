@@ -6,7 +6,7 @@ import org.stevenlowes.tools.strictorm.database.execute
 import org.stevenlowes.tools.strictorm.database.executeInsert
 import kotlin.reflect.KProperty1
 
-interface Dao{
+interface Dao {
     val id: Long
     val dbTable get() = this::class.dbTable
     val dbIdColumn get() = this::class.dbIdColumn
@@ -23,14 +23,15 @@ interface Dao{
 }
 
 @Suppress("UNCHECKED_CAST")
-val <T: Dao> T.dbColumns: List<Pair<Column, KProperty1<T, *>>> get() = this::class.dbColumns as List<Pair<Column, KProperty1<T, *>>>
+val <T : Dao> T.dbColumns: List<Pair<Column, KProperty1<T, *>>>
+    get() = this::class.dbColumns as List<Pair<Column, KProperty1<T, *>>>
 
-fun <T: Dao> T.reload(): T{
+fun <T : Dao> T.reload(): T {
     val id = this.id
-    if(id == -1L){
+    if (id == -1L) {
         throw DaoException("Cannot reload when never saved")
     }
-    else{
+    else {
         return this::class.read(id)
     }
 }
@@ -49,13 +50,13 @@ private fun <T : Dao> insert(dao: T): T {
     val query = InsertQuery(dao.dbTable)
     dao.dbColumns.forEach { (column, prop) ->
         val placeholder =
-        if(column.columnNameSQL.endsWith("_otm")){
-            val child = prop.get(dao) as Dao
-            preparer.addStaticPlaceHolder(child.id)
-        }
-        else{
-            preparer.addStaticPlaceHolder(prop.get(dao))
-        }
+                if (column.columnNameSQL.endsWith("_otm")) {
+                    val child = prop.get(dao) as Dao
+                    preparer.addStaticPlaceHolder(child.id)
+                }
+                else {
+                    preparer.addStaticPlaceHolder(prop.get(dao))
+                }
         query.addColumn(column, placeholder)
     }
 

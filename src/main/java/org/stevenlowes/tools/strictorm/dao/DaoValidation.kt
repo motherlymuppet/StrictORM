@@ -1,12 +1,10 @@
 package org.stevenlowes.tools.strictorm.dao
 
-import java.math.BigDecimal
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import kotlin.reflect.*
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.KProperty1
+import kotlin.reflect.KVisibility
 import kotlin.reflect.full.declaredMemberProperties
-import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.full.starProjectedType
 
@@ -77,32 +75,8 @@ class DaoValidation{
             if (name.endsWith("_otm"))
                 throw DaoException("$name ends with \"_otm\", which is not allowed (in $daoName)")
 
-            verifyPropertyType(property.returnType, name, daoName)
-        }
-
-        private fun verifyPropertyType(returnType: KType, propertyName: String, daoName: String) {
-            val options = listOf(
-                    String::class.starProjectedType,
-                    BigDecimal::class.starProjectedType,
-                    Long::class.starProjectedType,
-                    Int::class.starProjectedType,
-                    Boolean::class.starProjectedType,
-                    LocalDate::class.starProjectedType,
-                    Double::class.starProjectedType,
-                    Float::class.starProjectedType,
-                    LocalTime::class.starProjectedType,
-                    LocalDateTime::class.starProjectedType
-                                )
-
-            if(returnType in options){
-                return
-            }
-
-            if(returnType.isSubtypeOf(Dao::class.starProjectedType)){
-                return
-            }
-
-            throw DaoException("$propertyName in $daoName is not a valid type")
+            if(!(ValidTypes.isValid(property.returnType)))
+                throw DaoException("$name in $daoName is not a valid type")
         }
 
         private fun <T : Dao> verifyConstructor(constructor: KFunction<T>,
