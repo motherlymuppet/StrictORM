@@ -49,12 +49,10 @@ class DaoValidation{
 
             val properties = clazz.declaredMemberProperties
 
+            val idProperty = properties.firstOrNull { it.name == "id" && it.returnType == Long::class.starProjectedType && !it.returnType.isMarkedNullable }
+                    ?: throw DaoException("There must be a property \"val id: Long\".")
+
             verifyConstructor(constructor, properties, name)
-
-            val idProp = properties.firstOrNull()
-                    ?: throw DaoException("$name does not declare any properties. It must have at least an ID column")
-
-            verifyIdProp(idProp, name)
 
             properties.forEach { prop ->
                 verifyProperty(prop, name)
@@ -121,19 +119,6 @@ class DaoValidation{
 
             if (constructor.isOpen)
                 throw DaoException("The primary constructor in $daoName is open")
-
-            val nonIdConstructorArgs = constructor.parameters.take(constructor.parameters.size - 1).map { it.type }
-            val idConstructorArg = constructor.parameters.last().type
-
-            val nonIdProperties = properties.drop(1).map { it.returnType }
-            val idProperty = properties.first().returnType
-
-            if(idProperty != idConstructorArg)
-                throw DaoException("Last argument to constructor is not ID argument in $daoName")
-
-            if(nonIdConstructorArgs != nonIdProperties){
-                throw DaoException("Properties are not declared in the same order as the primary constructor arguments in $daoName")
-            }
 
             if (constructor.typeParameters.isNotEmpty())
                 throw DaoException("The primary constructor in $daoName takes type parameters. Is that even possible?! Don't do that.")

@@ -4,8 +4,10 @@ import com.healthmarketscience.sqlbuilder.CreateTableQuery
 import com.healthmarketscience.sqlbuilder.dbspec.Column
 import com.healthmarketscience.sqlbuilder.dbspec.Table
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbColumn
+import com.healthmarketscience.sqlbuilder.dbspec.basic.DbForeignKeyConstraint
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbSpec
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbTable
+import javafx.scene.control.Tab
 import org.stevenlowes.tools.strictorm.database.execute
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -16,17 +18,18 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.starProjectedType
+import kotlin.reflect.jvm.jvmErasure
 
 class DaoInitialiser {
     companion object {
         private val spec = DbSpec()
         private val schema = spec.addDefaultSchema()
 
-        private val tables: MutableMap<KClass<out Dao>, Table> = mutableMapOf()
+        private val tables: MutableMap<KClass<out Dao>, DbTable> = mutableMapOf()
         private val columns: MutableMap<KClass<out Dao>, List<Pair<Column, KProperty1<out Dao, *>>>> = mutableMapOf()
         private val idColumns: MutableMap<KClass<out Dao>, Column> = mutableMapOf()
 
-        internal fun <T : Dao> getTable(clazz: KClass<T>): Table {
+        internal fun <T : Dao> getTable(clazz: KClass<T>): DbTable {
             return tables[clazz] ?: throw DaoException("Table not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
         }
 
@@ -50,7 +53,13 @@ class DaoInitialiser {
             }
         }
 
-        fun initialise(daos: List<KClass<out Dao>>) {
+        fun initialise(daos: Iterable<KClass<out Dao>>) {
+            daos.forEach {
+                initialise(it)
+            }
+        }
+
+        fun initialise(vararg daos: KClass<out Dao>) {
             daos.forEach {
                 initialise(it)
             }
@@ -75,7 +84,45 @@ class DaoInitialiser {
             this.columns[dao] = columns
         }
 
-        private fun <T : Dao> addColumn(table: DbTable, property: KProperty1<T, *>): DbColumn {
+        private fun <T: Dao> addColumn(table: DbTable, property: KProperty1<T, *>): DbColumn{
+            val options = listOf(
+                    String::class.starProjectedType,
+                    BigDecimal::class.starProjectedType,
+                    Long::class.starProjectedType,
+                    Int::class.starProjectedType,
+                    Boolean::class.starProjectedType,
+                    LocalDate::class.starProjectedType,
+                    Double::class.starProjectedType,
+                    Float::class.starProjectedType,
+                    LocalTime::class.starProjectedType,
+                    LocalDateTime::class.starProjectedType
+                                )
+
+            return if(property.returnType in options){
+                addDataColumn(table, property)
+            }
+            else{
+                addOneToManyColumn(table, property)
+            }
+        }
+
+        private fun <T: Dao> addOneToManyColumn(table: DbTable, property: KProperty1<T, *>): DbColumn{
+            val name = property.name.toLowerCase() + "_id"
+            val column = table.addColumn(name, "BIGINT", null)
+
+            if(!property.returnType.isMarkedNullable){
+                column.notNull()
+            }
+
+            val erasure = property.returnType.jvmErasure as KClass<out Dao>
+            val otherTable = erasure.dbTable
+            val foreignKeyName = "foreign_key_${table.name}_${otherTable.tableNameSQL}_$name"
+            column.addConstraint(DbForeignKeyConstraint(column, foreignKeyName, otherTable, "id"))
+
+            return column
+        }
+
+        private fun <T : Dao> addDataColumn(table: DbTable, property: KProperty1<T, *>): DbColumn {
             val name = property.name.toLowerCase()
 
             val sj = StringJoiner(" ")

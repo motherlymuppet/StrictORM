@@ -5,16 +5,13 @@ import com.healthmarketscience.sqlbuilder.QueryPreparer
 import com.healthmarketscience.sqlbuilder.QueryReader
 import com.healthmarketscience.sqlbuilder.SelectQuery
 import com.healthmarketscience.sqlbuilder.dbspec.Column
-import com.healthmarketscience.sqlbuilder.dbspec.Table
+import com.healthmarketscience.sqlbuilder.dbspec.basic.DbTable
 import org.stevenlowes.tools.strictorm.database.executeQuery
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.KProperty1
-import kotlin.reflect.KVisibility
-import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.primaryConstructor
-import kotlin.reflect.full.starProjectedType
 
 abstract class DaoCompanion<T : Dao>(private val clazz: KClass<T>) {
     val table by lazy { clazz.dbTable }
@@ -26,8 +23,8 @@ abstract class DaoCompanion<T : Dao>(private val clazz: KClass<T>) {
     }
 }
 
-val <T : Dao> KClass<T>.dbTable: Table
-        by LazyWithReceiver<KClass<T>, Table>
+val <T : Dao> KClass<T>.dbTable: DbTable
+        by LazyWithReceiver<KClass<T>, DbTable>
         { DaoInitialiser.getTable(this) }
 
 val <T : Dao> KClass<T>.dbColumns: List<Pair<Column, KProperty1<T, *>>>
