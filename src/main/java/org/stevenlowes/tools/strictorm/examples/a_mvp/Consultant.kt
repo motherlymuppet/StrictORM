@@ -49,7 +49,8 @@ fun main(args: Array<String>) {
     val post = Post("This is a post", comment1, comment2).save()
     val userInfo = UserInfo(LocalDate.of(1995, 5, 12), "spam@stevenlowes.com").save()
     val user = User("Steven", userInfo, post).save()
-    println(user)
+    val readUser = User.read(user.id)
+    println(readUser)
 }
 
 //TODO need to support MTM
