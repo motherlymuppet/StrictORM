@@ -51,7 +51,9 @@ fun main(args: Array<String>) {
     val user = User("Steven", userInfo, post).save()
     val readUser = User.read(user.id)
     println(readUser)
+    //Prints: User(name=Steven, userInfo=UserInfo(birthDate=1995-05-12, email=spam@stevenlowes.com, id=1), post=Post(text=This is a post, comment1=Comment(text=This is a comment 1, id=1), comment2=Comment(text=This is a comment 2, id=2), id=1), id=1)
 }
 
 //TODO need to support MTM
 //TODO need to support cyclical foreign keys
+//TODO support listing instead of just reading
