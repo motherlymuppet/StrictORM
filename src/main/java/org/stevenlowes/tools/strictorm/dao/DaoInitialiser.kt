@@ -7,7 +7,6 @@ import com.healthmarketscience.sqlbuilder.dbspec.basic.DbColumn
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbForeignKeyConstraint
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbSpec
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbTable
-import javafx.scene.control.Tab
 import org.stevenlowes.tools.strictorm.database.execute
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -18,9 +17,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.KType
 import kotlin.reflect.full.declaredMemberProperties
-import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.full.starProjectedType
-import kotlin.reflect.jvm.jvmErasure
 
 //TODO how to map properties not appearing in the same order as constructor arguments
 
@@ -32,6 +29,7 @@ class DaoInitialiser {
         private val tables: MutableMap<KClass<out Dao>, DbTable> = mutableMapOf()
         private val columns: MutableMap<KClass<out Dao>, List<Pair<Column, KProperty1<out Dao, *>>>> = mutableMapOf()
         private val idColumns: MutableMap<KClass<out Dao>, Column> = mutableMapOf()
+        private val parseTreeBuilders: MutableMap<KClass<out Dao>, ParseTreeBuilder<out Dao>> = mutableMapOf()
 
         internal fun <T : Dao> getTable(clazz: KClass<T>): DbTable {
             return tables[clazz] ?: throw DaoException("Table not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
@@ -45,6 +43,12 @@ class DaoInitialiser {
 
         internal fun <T : Dao> getIdColumn(clazz: KClass<T>): Column {
             return idColumns[clazz] ?: throw DaoException("ID Column not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
+        }
+
+        internal fun <T: Dao> getParseTree(clazz: KClass<T>): ParseTree<T> {
+            val builder = parseTreeBuilders[clazz] ?: throw DaoException("Parse tree not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
+            val parseTree = (builder as ParseTreeBuilder<T>).get()
+            return parseTree
         }
 
         fun createTables(){
@@ -74,7 +78,7 @@ class DaoInitialiser {
                 }
 
                 if(toAdd.isEmpty()){
-                    throw DaoException("Cannot initialise DAOs due to dependency loop")
+                    throw DaoException("Cannot initialise DAOs due to dependency loop in the following DAOs: ${list.map { it.qualifiedName }}")
                 }
 
                 toAdd.forEach {
@@ -86,20 +90,11 @@ class DaoInitialiser {
             }
         }
 
-        fun <T : Dao> initialise(dao: KClass<T>) {
+        private fun <T : Dao> initialise(dao: KClass<T>) {
             DaoValidation.verify(dao)
 
             val tableName = dao.simpleName!!.toLowerCase()
             val table = schema.addTable(tableName)
-
-            //TESTING
-            val params = dao.primaryConstructor!!.parameters
-            params.map { it.name }
-
-            val props = dao.declaredMemberProperties
-            props.map { it.name }
-
-            //END TEST
 
             val columns = dao.declaredMemberProperties
                     .filter { it.name != "id" }
@@ -112,6 +107,8 @@ class DaoInitialiser {
 
             tables[dao] = table
             this.columns[dao] = columns
+
+            parseTreeBuilders[dao] = ParseTreeBuilder.generate(dao)
         }
 
         private fun <T: Dao> addColumn(table: DbTable, property: KProperty1<T, *>): DbColumn{

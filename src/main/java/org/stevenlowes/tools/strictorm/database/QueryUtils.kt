@@ -3,8 +3,8 @@ package org.stevenlowes.tools.strictorm.database
 import com.healthmarketscience.sqlbuilder.*
 import org.stevenlowes.tools.strictorm.dao.Dao
 import org.stevenlowes.tools.strictorm.dao.DaoException
+import org.stevenlowes.tools.strictorm.dao.ParseTree
 import java.sql.PreparedStatement
-import kotlin.reflect.KFunction
 
 fun <T : Dao> SelectQuery.executeQuery(preparer: QueryPreparer?, parseTree: ParseTree<T>): List<T> {
     return Transaction.execute { conn ->
