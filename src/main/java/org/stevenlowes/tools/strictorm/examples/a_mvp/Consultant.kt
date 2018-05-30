@@ -28,7 +28,7 @@ fun main(args: Array<String>){
         conn.prepareStatement("DROP TABLE IF EXISTS comment").execute()
     }
 
-    DaoInitialiser.initialise(UserInfo::class, User::class, Post::class, Comment::class) //TODO automatically reorder these
+    DaoInitialiser.initialise(UserInfo::class, User::class, Post::class, Comment::class)
     DaoInitialiser.createTables()
     val comment1 = Comment("This is a comment 1").save()
     val comment2 = Comment("This is a comment 2").save()
@@ -36,3 +36,6 @@ fun main(args: Array<String>){
     val userInfo = UserInfo(LocalDate.of(1995, 5, 12),"spam@stevenlowes.com").save()
     val user = User("Steven", userInfo, post).save()
 }
+
+//TODO need to support MTM
+//TODO need to support cyclical foreign keys

@@ -6,14 +6,14 @@ import org.stevenlowes.tools.strictorm.dao.DaoException
 import java.sql.PreparedStatement
 import kotlin.reflect.KFunction
 
-fun <T : Dao> SelectQuery.executeQuery(preparer: QueryPreparer?, parseTree: ParseTree): List<T> {
+fun <T : Dao> SelectQuery.executeQuery(preparer: QueryPreparer?, parseTree: ParseTree<T>): List<T> {
     return Transaction.execute { conn ->
         val sql = validate().toString()
         println(sql)
         val stmt = conn.prepareStatement(sql)
         preparer?.setStaticValues(stmt)
         val rs = stmt.executeQuery()
-        rs.readList(parseTree)
+        parseTree.parse(rs)
     }
 }
 
