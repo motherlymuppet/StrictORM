@@ -53,7 +53,6 @@ fun main(args: Array<String>) {
     println(comments)
 }
 
-//TODO Nullable OTM. Switch Inner joins to left joins. Check nullility on ID columns
 //TODO Break dependency loops
 //TODO Calculate lazy
 //TODO need to support MTM
