@@ -56,4 +56,3 @@ fun main(args: Array<String>) {
 //TODO Break dependency loops
 //TODO Calculate lazy
 //TODO need to support MTM
-//TODO switch id to int
