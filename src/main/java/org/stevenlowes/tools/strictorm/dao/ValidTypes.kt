@@ -14,7 +14,6 @@ class ValidTypes {
         private val dataTypes: List<KType> = listOf(
                 String::class.starProjectedType,
                 BigDecimal::class.starProjectedType,
-                Long::class.starProjectedType,
                 Int::class.starProjectedType,
                 Boolean::class.starProjectedType,
                 LocalDate::class.starProjectedType,

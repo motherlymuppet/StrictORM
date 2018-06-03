@@ -48,6 +48,7 @@ class DaoInitialiser {
 
         internal fun <T: Dao> getParseTree(clazz: KClass<T>): ParseTree<T> {
             val builder = parseTreeBuilders[clazz] ?: throw DaoException("Parse tree not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
+            @Suppress("UNCHECKED_CAST")
             val parseTree = (builder as ParseTreeBuilder<T>).get()
             return parseTree
         }
@@ -148,7 +149,7 @@ class DaoInitialiser {
                     when (type) {
                         String::class.starProjectedType -> "VARCHAR"
                         BigDecimal::class.starProjectedType -> "DECIMAL"
-                        Long::class.starProjectedType -> "BIGINT"
+                        Int::class.starProjectedType -> "BIGINT"
                         Int::class.starProjectedType -> "INTEGER"
                         Boolean::class.starProjectedType -> "BOOLEAN"
                         LocalDate::class.starProjectedType -> "DATE"

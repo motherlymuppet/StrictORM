@@ -7,7 +7,7 @@ import org.stevenlowes.tools.strictorm.database.executeInsert
 import kotlin.reflect.KProperty1
 
 interface Dao {
-    val id: Long
+    val id: Int
     val dbTable get() = this::class.dbTable
     val dbIdColumn get() = this::class.dbIdColumn
 
@@ -28,7 +28,7 @@ val <T : Dao> T.dbColumns: List<Pair<Column, KProperty1<T, *>>>
 
 fun <T : Dao> T.reload(): T {
     val id = this.id
-    if (id == -1L) {
+    if (id == -1) {
         throw DaoException("Cannot reload when never saved")
     }
     else {
@@ -37,7 +37,7 @@ fun <T : Dao> T.reload(): T {
 }
 
 fun <T : Dao> T.save(): T {
-    return if (id == -1L) {
+    return if (id == -1) {
         insert(this)
     }
     else {

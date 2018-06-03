@@ -47,10 +47,10 @@ class DaoValidation{
 
             val properties = clazz.declaredMemberProperties
 
-            val idProperty = properties.firstOrNull { it.name == "id" && it.returnType == Long::class.starProjectedType && !it.returnType.isMarkedNullable }
-                    ?: throw DaoException("There must be a property \"val id: Long\".")
+            properties.firstOrNull { it.name == "id" && it.returnType == Int::class.starProjectedType && !it.returnType.isMarkedNullable }
+                    ?: throw DaoException("There must be a property \"val id: Int\".")
 
-            verifyConstructor(constructor, properties, name)
+            verifyConstructor(constructor, name)
 
             properties.forEach { prop ->
                 verifyProperty(prop, name)
@@ -80,7 +80,6 @@ class DaoValidation{
         }
 
         private fun <T : Dao> verifyConstructor(constructor: KFunction<T>,
-                                                properties: Collection<KProperty1<T, *>>,
                                                 daoName: String) {
             if (constructor.isExternal)
                 throw DaoException("The primary constructor in $daoName is external")
@@ -108,8 +107,8 @@ class DaoValidation{
             if (property.name != "id")
                 throw DaoException("$daoName does not declare ID property last")
 
-            if (property.returnType != Long::class.starProjectedType)
-                throw DaoException("The ID property in $daoName is not a Long")
+            if (property.returnType != Int::class.starProjectedType)
+                throw DaoException("The ID property in $daoName is not a Int")
 
             if (property.returnType.isMarkedNullable)
                 throw DaoException("The ID property in $daoName is nullable")

@@ -8,14 +8,14 @@ data class User(
         @StringLength(20) val name: String,
         val userInfo: UserInfo,
         val post: Post,
-        override val id: Long = -1) : Dao {
+        override val id: Int = -1) : Dao {
     companion object : DaoCompanion<User>(User::class)
 }
 
 data class UserInfo(
         val birthDate: LocalDate,
         @StringLength(100) val email: String,
-        override val id: Long = -1) : Dao {
+        override val id: Int = -1) : Dao {
     companion object : DaoCompanion<UserInfo>(UserInfo::class)
 }
 
@@ -23,13 +23,13 @@ data class Post(
         @StringLength(1000) val text: String,
         val comment1: Comment,
         val comment2: Comment?,
-        override val id: Long = -1) : Dao {
+        override val id: Int = -1) : Dao {
     companion object : DaoCompanion<Post>(Post::class)
 }
 
 data class Comment(
         @StringLength(100) val text: String,
-        override val id: Long = -1) : Dao {
+        override val id: Int = -1) : Dao {
     companion object : DaoCompanion<Comment>(Comment::class)
 }
 

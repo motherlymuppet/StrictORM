@@ -16,7 +16,7 @@ abstract class DaoCompanion<T : Dao>(private val clazz: KClass<T>) {
     val columns by lazy { clazz.dbColumns }
     val idColumn by lazy { clazz.dbIdColumn }
 
-    fun read(id: Long): T {
+    fun read(id: Int): T {
         return clazz.read(id)
     }
 
@@ -39,7 +39,7 @@ val <T : Dao> KClass<T>.dbIdColumn: Column
 
 fun <T : Dao> KClass<T>.getParseTree(): ParseTree<T> = DaoInitialiser.getParseTree(this)
 
-fun <T : Dao> KClass<T>.read(id: Long): T {
+fun <T : Dao> KClass<T>.read(id: Int): T {
     val preparer = QueryPreparer()
     val parseTree = getParseTree()
     val query = parseTree.selectQuery

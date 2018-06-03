@@ -17,8 +17,8 @@ fun <T : Dao> SelectQuery.executeQuery(preparer: QueryPreparer?, parseTree: Pars
     }
 }
 
-fun InsertQuery.executeInsert(preparer: QueryPreparer? = null): Long {
-    var id: Long = -1
+fun InsertQuery.executeInsert(preparer: QueryPreparer? = null): Int {
+    var id: Int = -1
     val sql = validate().toString()
 
     Transaction.execute { conn ->
@@ -27,10 +27,10 @@ fun InsertQuery.executeInsert(preparer: QueryPreparer? = null): Long {
         stmt.execute()
         val keys = stmt.generatedKeys
         keys.next()
-        id = keys.getLong(1)
+        id = keys.getInt(1)
     }
 
-    if (id == -1L) {
+    if (id == -1) {
         throw DaoException("Unable to load id of inserted object - $sql")
     }
     else {
