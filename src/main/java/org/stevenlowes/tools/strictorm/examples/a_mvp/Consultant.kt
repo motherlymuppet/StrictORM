@@ -22,7 +22,7 @@ data class UserInfo(
 data class Post(
         @StringLength(1000) val text: String,
         val comment1: Comment,
-        val comment2: Comment,
+        val comment2: Comment?,
         override val id: Long = -1) : Dao {
     companion object : DaoCompanion<Post>(Post::class)
 }
@@ -33,12 +33,6 @@ data class Comment(
     companion object : DaoCompanion<Comment>(Comment::class)
 }
 
-data class Testing(
-        val test: Testing?,
-        override val id: Long = -1) : Dao {
-    companion object : DaoCompanion<Testing>(Testing::class)
-}
-
 fun main(args: Array<String>) {
     Transaction.execute { conn ->
         conn.prepareStatement("DROP TABLE IF EXISTS user").execute()
@@ -47,11 +41,10 @@ fun main(args: Array<String>) {
         conn.prepareStatement("DROP TABLE IF EXISTS comment").execute()
     }
 
-    DaoInitialiser.initialise(UserInfo::class, User::class, Post::class, Comment::class, Testing::class)
+    DaoInitialiser.initialise(UserInfo::class, User::class, Post::class, Comment::class)
     DaoInitialiser.createTables()
     val comment1 = Comment("This is a comment 1").save()
-    val comment2 = Comment("This is a comment 2").save()
-    val post = Post("This is a post", comment1, comment2).save()
+    val post = Post("This is a post", comment1, null).save()
     val userInfo = UserInfo(LocalDate.of(1995, 5, 12), "spam@stevenlowes.com").save()
     val user = User("Steven", userInfo, post).save()
     val readUser = User.read(user.id)
@@ -60,4 +53,8 @@ fun main(args: Array<String>) {
     println(comments)
 }
 
+//TODO Nullable OTM. Switch Inner joins to left joins. Check nullility on ID columns
+//TODO Break dependency loops
+//TODO Calculate lazy
 //TODO need to support MTM
+//TODO switch id to int

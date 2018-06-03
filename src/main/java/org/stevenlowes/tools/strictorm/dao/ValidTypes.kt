@@ -7,6 +7,7 @@ import java.time.LocalTime
 import kotlin.reflect.KType
 import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.starProjectedType
+import kotlin.reflect.full.withNullability
 
 class ValidTypes {
     companion object {
@@ -28,11 +29,11 @@ class ValidTypes {
         }
 
         private fun isDao(type: KType): Boolean {
-            return type.isSubtypeOf(Dao::class.starProjectedType)
+            return type.withNullability(false).isSubtypeOf(Dao::class.starProjectedType)
         }
 
         fun isDataType(type: KType): Boolean {
-            return type in dataTypes
+            return type.withNullability(false) in dataTypes
         }
     }
 }

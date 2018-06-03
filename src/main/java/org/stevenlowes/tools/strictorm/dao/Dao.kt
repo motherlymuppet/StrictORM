@@ -51,8 +51,8 @@ private fun <T : Dao> insert(dao: T): T {
     dao.dbColumns.forEach { (column, prop) ->
         val placeholder =
                 if (column.columnNameSQL.endsWith("_otm")) {
-                    val child = prop.get(dao) as Dao
-                    preparer.addStaticPlaceHolder(child.id)
+                    val child = prop.get(dao) as Dao?
+                    preparer.addStaticPlaceHolder(child?.id)
                 }
                 else {
                     preparer.addStaticPlaceHolder(prop.get(dao))

@@ -18,6 +18,7 @@ import kotlin.reflect.KProperty1
 import kotlin.reflect.KType
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.starProjectedType
+import kotlin.reflect.full.withNullability
 
 //TODO how to map properties not appearing in the same order as constructor arguments
 
@@ -72,7 +73,7 @@ class DaoInitialiser {
             while(list.isNotEmpty()){
                 val toAdd = list.filter {
                     it.declaredMemberProperties.all {
-                        val returnType = it.returnType
+                        val returnType = it.returnType.withNullability(false)
                         ValidTypes.isDataType(returnType) || returnType in created
                     }
                 }
