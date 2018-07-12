@@ -2,8 +2,8 @@ package org.stevenlowes.tools.strictorm.dao
 
 import com.healthmarketscience.sqlbuilder.*
 import com.healthmarketscience.sqlbuilder.dbspec.Column
-import org.stevenlowes.tools.strictorm.database.execute
-import org.stevenlowes.tools.strictorm.database.executeInsert
+import org.stevenlowes.tools.strictorm.dao.exceptions.DaoException
+import org.stevenlowes.tools.strictorm.extensions.*
 import kotlin.reflect.KProperty1
 
 interface Dao {

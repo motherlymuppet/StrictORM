@@ -4,6 +4,11 @@ import com.healthmarketscience.sqlbuilder.BinaryCondition
 import com.healthmarketscience.sqlbuilder.QueryReader
 import com.healthmarketscience.sqlbuilder.SelectQuery
 import com.healthmarketscience.sqlbuilder.dbspec.RejoinTable
+import org.stevenlowes.tools.strictorm.dao.exceptions.DaoException
+import org.stevenlowes.tools.strictorm.extensions.dbColumns
+import org.stevenlowes.tools.strictorm.extensions.dbIdColumn
+import org.stevenlowes.tools.strictorm.extensions.dbTable
+import org.stevenlowes.tools.strictorm.extensions.toDaoClass
 import java.sql.Date
 import java.sql.ResultSet
 import java.sql.Time

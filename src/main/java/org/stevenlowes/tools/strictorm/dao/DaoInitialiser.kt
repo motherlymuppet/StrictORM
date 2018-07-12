@@ -7,20 +7,18 @@ import com.healthmarketscience.sqlbuilder.dbspec.basic.DbColumn
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbForeignKeyConstraint
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbSpec
 import com.healthmarketscience.sqlbuilder.dbspec.basic.DbTable
-import org.stevenlowes.tools.strictorm.database.execute
+import org.stevenlowes.tools.strictorm.dao.annotations.DecimalPrecision
+import org.stevenlowes.tools.strictorm.dao.annotations.StringLength
+import org.stevenlowes.tools.strictorm.dao.exceptions.DaoException
+import org.stevenlowes.tools.strictorm.dao.exceptions.DaoInvalidColumnTypeException
+import org.stevenlowes.tools.strictorm.extensions.*
 import java.math.BigDecimal
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.KType
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.withNullability
-
-//TODO how to map properties not appearing in the same order as constructor arguments
 
 class DaoInitialiser {
     companion object {
@@ -33,31 +31,36 @@ class DaoInitialiser {
         private val parseTreeBuilders: MutableMap<KClass<out Dao>, ParseTreeBuilder<out Dao>> = mutableMapOf()
 
         internal fun <T : Dao> getTable(clazz: KClass<T>): DbTable {
-            return tables[clazz] ?: throw DaoException("Table not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
+            return tables[clazz]
+                    ?: throw DaoException("Table not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
         }
 
         internal fun <T : Dao> getColumns(clazz: KClass<T>): List<Pair<Column, KProperty1<T, *>>> {
-            val columns = columns[clazz] ?: throw DaoException("Columns not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
+            val columns = columns[clazz]
+                    ?: throw DaoException("Columns not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
+
             @Suppress("UNCHECKED_CAST")
             return columns as List<Pair<Column, KProperty1<T, *>>>
         }
 
         internal fun <T : Dao> getIdColumn(clazz: KClass<T>): Column {
-            return idColumns[clazz] ?: throw DaoException("ID Column not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
+            return idColumns[clazz]
+                    ?: throw DaoException("ID Column not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
         }
 
-        internal fun <T: Dao> getParseTree(clazz: KClass<T>): ParseTree<T> {
-            val builder = parseTreeBuilders[clazz] ?: throw DaoException("Parse tree not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
+        internal fun <T : Dao> getParseTree(clazz: KClass<T>): ParseTree<T> {
+            val builder = parseTreeBuilders[clazz]
+                    ?: throw DaoException("Parse tree not found for class ${clazz.simpleName}. Check that it was passed to the initialisation call.")
+
             @Suppress("UNCHECKED_CAST")
-            val parseTree = (builder as ParseTreeBuilder<T>).get()
-            return parseTree
+            return (builder as ParseTreeBuilder<T>).get()
         }
 
-        fun createTables(){
+        fun createTables() {
             createTables(tables.values)
         }
 
-        private fun createTables(tables: Iterable<Table>){
+        private fun createTables(tables: Iterable<Table>) {
             tables.forEach {
                 CreateTableQuery(it, true).execute()
             }
@@ -71,15 +74,15 @@ class DaoInitialiser {
             val list = daos.toMutableList()
             val created: MutableList<KType> = mutableListOf()
 
-            while(list.isNotEmpty()){
+            while (list.isNotEmpty()) {
                 val toAdd = list.filter {
                     it.declaredMemberProperties.all {
                         val returnType = it.returnType.withNullability(false)
-                        ValidTypes.isDataType(returnType) || returnType in created
+                        returnType.isDataType() || returnType in created
                     }
                 }
 
-                if(toAdd.isEmpty()){
+                if (toAdd.isEmpty()) {
                     throw DaoException("Cannot initialise DAOs due to dependency loop in the following DAOs: ${list.map { it.qualifiedName }}")
                 }
 
@@ -100,7 +103,7 @@ class DaoInitialiser {
 
             val columns = dao.declaredMemberProperties
                     .filter { it.name != "id" }
-                    .map{ addColumn(table, it) to it }
+                    .map { addColumn(table, it) to it }
 
             val idColumn = table.addColumn("id", "IDENTITY", null)
             idColumn.notNull()
@@ -113,25 +116,25 @@ class DaoInitialiser {
             parseTreeBuilders[dao] = ParseTreeBuilder.generate(dao)
         }
 
-        private fun <T: Dao> addColumn(table: DbTable, property: KProperty1<T, *>): DbColumn{
-            return if(ValidTypes.isDataType(property.returnType)){
-                addDataColumn(table, property)
-            }
-            else{
-                addOneToManyColumn(table, property)
+        private fun <T : Dao> addColumn(table: DbTable, property: KProperty1<T, *>): DbColumn {
+            return when {
+                property.returnType.isDataType() -> addDataColumn(table, property)
+                property.returnType.isDao() -> addOneToManyColumn(table, property)
+                else -> throw DaoInvalidColumnTypeException(
+                        "DAO property is not a valid data type or DAO: Property ${property.name} is type ${property.returnType} in ${table.name}")
             }
         }
 
-        private fun <T: Dao> addOneToManyColumn(table: DbTable, property: KProperty1<T, *>): DbColumn{
+        private fun <T : Dao> addOneToManyColumn(table: DbTable, property: KProperty1<T, *>): DbColumn {
             val name = property.name.toLowerCase() + "_id_otm"
             val column = table.addColumn(name, "BIGINT", null)
 
-            if(!property.returnType.isMarkedNullable){
+            if (!property.returnType.isMarkedNullable) {
                 column.notNull()
             }
 
-            val erasure = property.toDaoClass()
-            val otherTable = erasure.dbTable
+            val daoProperty = property.toDaoClass()
+            val otherTable = daoProperty.dbTable
             val foreignKeyName = "foreign_key_${table.name}_${otherTable.tableNameSQL}_$name"
             val foreignKey = DbForeignKeyConstraint(column, foreignKeyName, otherTable, "id")
             column.addConstraint(foreignKey)
@@ -142,34 +145,16 @@ class DaoInitialiser {
         private fun <T : Dao> addDataColumn(table: DbTable, property: KProperty1<T, *>): DbColumn {
             val name = property.name.toLowerCase()
 
-            val sj = StringJoiner(" ")
             val type = property.returnType
+            val columnType = type.toColumnTypeString()
 
-            sj.add(
-                    when (type) {
-                        String::class.starProjectedType -> "VARCHAR"
-                        BigDecimal::class.starProjectedType -> "DECIMAL"
-                        Int::class.starProjectedType -> "BIGINT"
-                        Int::class.starProjectedType -> "INTEGER"
-                        Boolean::class.starProjectedType -> "BOOLEAN"
-                        LocalDate::class.starProjectedType -> "DATE"
-                        Double::class.starProjectedType -> "DOUBLE"
-                        Float::class.starProjectedType -> "FLOAT"
-                        LocalTime::class.starProjectedType -> "TIME"
-                        LocalDateTime::class.starProjectedType -> "TIMESTAMP"
-                        else -> {
-                            throw DaoException("Unable to parse the type of $property")
-                        }
-                    }
-                  )
-
-            val column = when (type) {
-                String::class.starProjectedType -> addStringColumn(property, table, name, sj.toString())
-                BigDecimal::class.starProjectedType -> addDecimalColumn(property, table, name, sj.toString())
-                else -> table.addColumn(name, sj.toString(), null)
+            val column = when (type) { //This is where the column actually gets added to the table
+                String::class.starProjectedType -> addStringColumn(property, table, name, columnType)
+                BigDecimal::class.starProjectedType -> addDecimalColumn(property, table, name, columnType)
+                else -> table.addColumn(name, columnType, null)
             }
 
-            if(!type.isMarkedNullable){
+            if (!type.isMarkedNullable) {
                 column.notNull()
             }
 

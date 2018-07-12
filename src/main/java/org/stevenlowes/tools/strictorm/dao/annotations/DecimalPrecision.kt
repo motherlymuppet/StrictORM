@@ -1,4 +1,4 @@
-package org.stevenlowes.tools.strictorm.dao
+package org.stevenlowes.tools.strictorm.dao.annotations
 
 @Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.RUNTIME)

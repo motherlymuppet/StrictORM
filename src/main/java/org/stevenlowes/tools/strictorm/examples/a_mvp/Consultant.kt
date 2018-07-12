@@ -1,6 +1,7 @@
 package org.stevenlowes.tools.strictorm.examples.a_mvp
 
 import org.stevenlowes.tools.strictorm.dao.*
+import org.stevenlowes.tools.strictorm.dao.annotations.StringLength
 import org.stevenlowes.tools.strictorm.database.Transaction
 import java.time.LocalDate
 
@@ -53,6 +54,12 @@ fun main(args: Array<String>) {
     println(comments)
 }
 
+//TODO documentation
+//TODO Unit testing
+//TODO dependency injection
+
 //TODO Break dependency loops
-//TODO Calculate lazy
+//TODO force lazy computation
 //TODO need to support MTM
+//TODO test with multiple server backends
+//TODO read from config file

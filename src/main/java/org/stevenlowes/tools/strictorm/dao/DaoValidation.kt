@@ -1,5 +1,7 @@
 package org.stevenlowes.tools.strictorm.dao
 
+import org.stevenlowes.tools.strictorm.dao.exceptions.DaoException
+import org.stevenlowes.tools.strictorm.extensions.isValid
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty1
@@ -75,7 +77,7 @@ class DaoValidation{
             if (name.endsWith("_otm"))
                 throw DaoException("$name ends with \"_otm\", which is not allowed (in $daoName)")
 
-            if(!(ValidTypes.isValid(property.returnType)))
+            if(!property.returnType.isValid())
                 throw DaoException("$name in $daoName is not a valid type")
         }
 
